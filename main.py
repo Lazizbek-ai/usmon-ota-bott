@@ -76,9 +76,9 @@ async def get_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     markup = ReplyKeyboardMarkup([[contact_btn]], resize_keyboard=True, one_time_keyboard=True)
 
     if context.user_data["lang"] == "uz":
-        await update.message.reply_text("Endi telefon raqamingizni yuboring:", reply_markup=markup)
+        await update.message.reply_text(f"{context.user_data['name']}, endi telefon raqamingizni yuboring:", reply_markup=markup)
     else:
-        await update.message.reply_text("Теперь отправьте ваш номер телефона:", reply_markup=markup)
+        await update.message.reply_text(f"{context.user_data['name']}, теперь отправьте ваш номер телефона:", reply_markup=markup)
     return ASK_PHONE
 
 # Phone
@@ -97,13 +97,18 @@ async def get_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
             with open("registrations.csv", "a", encoding='utf-8') as f:
                 f.write(f"{update.effective_user.id},{name},{phone},{code},{reg_date}\n")
     except Exception as e:
-        print(f"Error saving: {e}")
+        await update.message.reply_text(
+            "❌ Afsuski, biror narsa noto'g'ri ishladi. \n"
+            "Iltimos, /start buyrug'i bilan qaytadan boshlang yoki muammo davom etsa, adminga murojaat qiling: @lazizln\n\n"
+            "❌ Что-то пошло не так. Пожалуйста, начните заново с /start или обратитесь к администратору: @lazizln"
+        )
+        return ConversationHandler.END
 
     msg = (
-        f"✅ Siz ro'yxatdan o'tdingiz!\nSizning unikal kodingiz: *{code}*\n"
+        f"✅ {name}, siz ro'yxatdan o'tdingiz!\nSizning unikal kodingiz: *{code}*\n"
         "Ushbu kodni restoranda ko'rsating va sovrin yutish imkoniyatiga ega bo'ling! 🎁"
         if lang == "uz" else
-        f"✅ Вы успешно зарегистрированы!\nВаш уникальный код: *{code}*\n"
+        f"✅ {name}, вы успешно зарегистрированы!\nВаш уникальный код: *{code}*\n"
         "Покажите этот код в ресторане и получите шанс выиграть приз! 🎁"
     )
     await update.message.reply_text(msg, parse_mode="Markdown", reply_markup=ReplyKeyboardRemove())
@@ -113,6 +118,15 @@ async def get_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("❌ Jarayon bekor qilindi / Процесс отменен.", reply_markup=ReplyKeyboardRemove())
     return ConversationHandler.END
+
+# /count
+async def count_participants(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not os.path.exists("registrations.csv"):
+        await update.message.reply_text("📭 Hali hech kim ro'yxatdan o'tmagan.")
+        return
+    with open("registrations.csv", "r", encoding="utf-8") as f:
+        total = len([line for line in f if line.strip()])
+    await update.message.reply_text(f"📊 Jami ro'yxatdan o'tganlar soni: {total}")
 
 # /list
 async def list_participants(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -245,6 +259,7 @@ def main():
     app.add_handler(CommandHandler("list", list_participants))
     app.add_handler(CommandHandler("remove", remove_user))
     app.add_handler(CommandHandler("winner", pick_winner))
+    app.add_handler(CommandHandler("count", count_participants))
 
     keep_alive()
     print("✅ Bot started...")
