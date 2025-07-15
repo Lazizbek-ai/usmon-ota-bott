@@ -84,11 +84,22 @@ async def get_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # Phone
 async def get_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
     contact = update.message.contact
-    phone = contact.phone_number if contact else update.message.text
+    phone = contact.phone_number if contact else update.message.text.strip()
+
+    # Validate phone if not shared as contact
+    if not contact and not re.match(r"^\+?\d{7,15}$", phone):
+        lang = context.user_data.get("lang", "uz")
+        msg = (
+            "❌ Iltimos, faqat telefon raqamingizni yuboring yoki '📞 Raqamni yuborish' tugmasidan foydalaning."
+            if lang == "uz" else
+            "❌ Пожалуйста, отправьте только свой номер телефона или используйте кнопку '📞 Отправить номер'."
+        )
+        await update.message.reply_text(msg)
+        return ASK_PHONE
+
     name = context.user_data.get("name")
     lang = context.user_data.get("lang", "uz")
     code = f"USMON{str(uuid.uuid4())[:8].upper()}"
-
     tz = pytz.timezone("Asia/Tashkent")
     reg_date = datetime.now(tz).strftime("%Y-%m-%d %H:%M")
 
@@ -97,9 +108,10 @@ async def get_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
             with open("registrations.csv", "a", encoding='utf-8') as f:
                 f.write(f"{update.effective_user.id},{name},{phone},{code},{reg_date}\n")
     except Exception as e:
+        print(f"Error saving: {e}")
         await update.message.reply_text(
-            "❌ Afsuski, biror narsa noto'g'ri ishladi. \n"
-            "Iltimos, /start buyrug'i bilan qaytadan boshlang yoki muammo davom etsa, adminga murojaat qiling: @lazizln\n\n"
+            "❌ Afsuski, biror narsa noto'g'ri ishladi.\n"
+            "Iltimos, /start buyrug'i bilan qaytadan boshlang yoki adminga murojaat qiling: @lazizln\n\n"
             "❌ Что-то пошло не так. Пожалуйста, начните заново с /start или обратитесь к администратору: @lazizln"
         )
         return ConversationHandler.END
