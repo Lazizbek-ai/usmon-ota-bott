@@ -142,11 +142,11 @@ async def list_participants(update: Update, context: ContextTypes.DEFAULT_TYPE):
         mobile_output = ""
         for i, (_, name, phone, code, date) in enumerate(lines, start=1):
             mobile_output += (
-                f"👤 {i}.\n"
-                f"🧑‍💼 Ism: *{name}*\n"
-                f"📞 Tel: `{phone}`\n"
-                f"🆔 Kod: `{code}`\n"
-                f"📅 Sana: {date}\n\n"
+                f" {i}.\n"
+                f" Ism: {name}\n"
+                f" Tel: {phone}\n"
+                f" Kod: {code}\n"
+                f" Sana: {date}\n\n"
             )
         with open("list_mobile.txt", "w", encoding="utf-8") as f:
             f.write(mobile_output)
